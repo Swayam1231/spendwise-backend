@@ -1,29 +1,35 @@
 const admin = require('firebase-admin');
 
-const projectId = process.env.FIREBASE_PROJECT_ID || process.env.project_id;
-const clientEmail = process.env.FIREBASE_CLIENT_EMAIL || process.env.client_email;
-const privateKey = process.env.FIREBASE_PRIVATE_KEY || process.env.private_key;
+const projectId = process.env.project_id || process.env.FIREBASE_PROJECT_ID;
+const clientEmail = process.env.client_email || process.env.FIREBASE_CLIENT_EMAIL;
+let privateKey = process.env.private_key || process.env.FIREBASE_PRIVATE_KEY;
 
-if (projectId && privateKey) {
-  // Use Environment Variables (Production / Render)
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId,
-      clientEmail,
-      // Replace literal \n with actual newlines for private key parsing
-      privateKey: privateKey.replace(/\\n/g, '\n'),
-    })
-  });
-} else {
-  // Fallback to local JSON file for local development
-  try {
-    const serviceAccount = require('./serviceAccountKey.json');
+if (!admin.apps.length) {
+  if (projectId && privateKey) {
+    // Clean the private key (remove quotes and fix newlines)
+    const formattedKey = privateKey
+      .replace(/^"|"$/g, '')
+      .replace(/\\n/g, '\n');
+
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+      credential: admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey: formattedKey,
+      })
     });
-  } catch (error) {
-    console.log('Firebase initialized without explicit credentials (awaiting setup)');
-    admin.initializeApp();
+    console.log('Firebase initialized with Environment Variables');
+  } else {
+    try {
+      const serviceAccount = require('./serviceAccountKey.json');
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+      console.log('Firebase initialized with JSON file');
+    } catch (error) {
+      console.log('Firebase fallback initialization');
+      admin.initializeApp();
+    }
   }
 }
 
