@@ -28,16 +28,20 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'API is running' });
 });
 
-// 404 catch-all — log exactly what was missed
+// 404 catch-all
 app.use((req, res) => {
   console.log(`[404] No route matched: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ error: `Route not found: ${req.method} ${req.originalUrl}` });
 });
 
-// Error handling middleware
+// Final Error handling middleware
 app.use((err, req, res, next) => {
+  console.error('CRITICAL SERVER ERROR:', err.message);
   console.error(err.stack);
-  res.status(500).json({ error: 'Something broke!' });
+  res.status(500).json({ 
+    error: 'Backend Error', 
+    message: err.message 
+  });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
