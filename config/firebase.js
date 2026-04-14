@@ -5,30 +5,40 @@ const clientEmail = process.env.client_email || process.env.FIREBASE_CLIENT_EMAI
 let privateKey = process.env.private_key || process.env.FIREBASE_PRIVATE_KEY;
 
 if (!admin.apps.length) {
+  console.log('---- FIREBASE DIAGNOSTICS ----');
+  console.log('Project ID found:', !!projectId, `(Length: ${projectId?.length || 0})`);
+  console.log('Client Email found:', !!clientEmail, `(Length: ${clientEmail?.length || 0})`);
+  console.log('Private Key found:', !!privateKey, `(Length: ${privateKey?.length || 0})`);
+
   if (projectId && privateKey) {
-    // Clean the private key (remove quotes and fix newlines)
     const formattedKey = privateKey
       .replace(/^"|"$/g, '')
-      .replace(/\\n/g, '\n');
+      .replace(/\\n/g, '\n')
+      .trim();
 
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        clientEmail,
-        privateKey: formattedKey,
-      })
-    });
-    console.log('Firebase initialized with Environment Variables');
+    try {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey: formattedKey,
+        })
+      });
+      console.log('Firebase init SUCCESS with Env Vars');
+    } catch (e) {
+      console.error('Firebase init ERROR:', e.message);
+    }
   } else {
+    // Fallback to local
+    console.log('Falling back to local config...');
     try {
       const serviceAccount = require('./serviceAccountKey.json');
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });
-      console.log('Firebase initialized with JSON file');
     } catch (error) {
-      console.log('Firebase fallback initialization');
-      admin.initializeApp();
+       console.log('Final fallback init');
+       admin.initializeApp();
     }
   }
 }
